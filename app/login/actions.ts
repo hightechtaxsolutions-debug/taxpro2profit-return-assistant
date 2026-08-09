@@ -1,0 +1,6 @@
+'use server';
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+const credentials = (f: FormData) => ({ email: String(f.get('email') || '').trim(), password: String(f.get('password') || ''), displayName: String(f.get('display_name') || '').trim() });
+export async function login(formData: FormData) { const { email, password } = credentials(formData); const supabase = await createClient(); const { error } = await supabase.auth.signInWithPassword({ email, password }); if (error) redirect('/login?error=We%20could%20sign%20you%20in.'); redirect('/'); }
+export async function signup(formData: FormData) { const { email, password, displayName } = credentials(formData); if (!email || password.length < 8) redirect('/login?error=Use%20a%20valid%20email%20and%20an%208-character%20password.'); const supabase = await createClient(); const origin = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'; const { error } = await supabase.auth.signUp({ email, password, options: { data: { display_name: displayName }, emailRedirectTo: `${origin}/auth/callback` } }); if (error) redirect(`/login?error=${encodeURIComponent(error.message)}`); redirect('/login?message=Check%20your%20email%20to%20confirm%20your%20account.'); }
